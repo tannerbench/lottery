@@ -1,0 +1,252 @@
+<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#fff;color:#000}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
+<title>抽選</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Dela+Gothic+One&family=DotGothic16&family=M+PLUS+1p:wght@400;700&display=swap">
+<style>
+/* Layout: one-screen hall board — marquee header, LED number window, big red button, drawn-number strip */
+:root {
+  --bg: #0d0a14;
+  --panel: #1a1424;
+  --ink: #f6eedd;
+  --muted: #9c8fb0;
+  --gold: #ffc94a;
+  --red: #e8202c;
+  --red-deep: #8e0a12;
+  --led: #ff8a1f;
+  --font-display: "Dela Gothic One", "Hiragino Sans", "Yu Gothic", sans-serif;
+  --font-led: "DotGothic16", "MS Gothic", monospace;
+  --font-body: "M PLUS 1p", "Hiragino Sans", "Yu Gothic", sans-serif;
+  color-scheme: dark;
+}
+html, body { height: 100%; }
+body {
+  background: radial-gradient(ellipse at 50% 30%, #2a1838 0%, var(--bg) 70%);
+  background-color: var(--bg);
+  color: var(--ink);
+  font-family: var(--font-body);
+  padding-inline: 16px;
+  display: flex; justify-content: center;
+}
+.wrap { width: 100%; max-width: 560px; display: flex; flex-direction: column; align-items: center; gap: 22px; padding-block: 20px 28px; }
+
+/* marquee */
+.marquee {
+  position: relative; width: 100%; text-align: center;
+  padding: 14px 12px; border: 3px solid var(--gold); border-radius: 14px;
+  background: linear-gradient(180deg, #3a1020, #1c0810);
+}
+.marquee h1 {
+  margin: 0; font-family: var(--font-display); font-weight: 400;
+  font-size: clamp(26px, 8vw, 40px); letter-spacing: .06em; color: var(--gold);
+  text-shadow: 0 0 10px rgba(255,201,74,.6), 0 3px 0 var(--red-deep);
+  text-wrap: balance;
+}
+.marquee p { margin: 4px 0 0; font-size: 13px; color: var(--muted); letter-spacing: .1em; }
+.bulbs { position: absolute; left: 10px; right: 10px; height: 8px; display: flex; justify-content: space-between; }
+.bulbs.top { top: -5px; } .bulbs.bottom { bottom: -5px; }
+.bulbs i { width: 8px; height: 8px; border-radius: 50%; background: var(--gold); box-shadow: 0 0 6px var(--gold); animation: blink 1.2s steps(1) infinite; }
+.bulbs i:nth-child(even) { animation-delay: .6s; }
+@keyframes blink { 50% { opacity: .25; box-shadow: none; } }
+
+/* LED window */
+.board {
+  width: 100%; background: #050307; border: 2px solid #3b2e4a; border-radius: 12px;
+  padding: 18px 12px 14px; text-align: center;
+  box-shadow: inset 0 0 30px rgba(0,0,0,.9);
+}
+.board .label { font-size: 12px; letter-spacing: .3em; color: var(--muted); }
+.number {
+  font-family: var(--font-led); color: var(--led);
+  font-size: clamp(88px, 30vw, 150px); line-height: 1.05;
+  font-variant-numeric: tabular-nums;
+  text-shadow: 0 0 14px rgba(255,138,31,.75), 0 0 40px rgba(255,138,31,.35);
+}
+.number.idle { color: #4a3420; text-shadow: none; }
+.number.hit { animation: hit .5s ease-out 3; }
+@keyframes hit { 0% { transform: scale(1.18); color: #fff3c0; } 100% { transform: scale(1); } }
+.board .sub { min-height: 1.5em; font-size: 15px; font-weight: 700; color: var(--gold); }
+
+/* red button */
+.btn-zone { padding: 10px 0 4px; }
+.big-red {
+  width: clamp(170px, 52vw, 230px); aspect-ratio: 1; max-width: 100%;
+  border-radius: 50%; border: none; cursor: pointer;
+  background: radial-gradient(circle at 35% 30%, #ff7a7f 0%, var(--red) 38%, var(--red-deep) 100%);
+  box-shadow: 0 12px 0 #5a050b, 0 18px 30px rgba(0,0,0,.6), 0 0 0 10px #2b2333, 0 0 0 13px var(--gold);
+  color: #fff; font-family: var(--font-display); font-size: clamp(26px, 8vw, 34px);
+  letter-spacing: .08em; text-shadow: 0 2px 0 var(--red-deep);
+  transition: transform .08s, box-shadow .08s;
+}
+.big-red:active:not(:disabled), .big-red.pressed {
+  transform: translateY(10px);
+  box-shadow: 0 2px 0 #5a050b, 0 6px 12px rgba(0,0,0,.6), 0 0 0 10px #2b2333, 0 0 0 13px var(--gold);
+}
+.big-red:disabled { filter: grayscale(.7) brightness(.6); cursor: not-allowed; }
+.big-red:focus-visible { outline: 3px dashed var(--gold); outline-offset: 18px; }
+
+/* settings + history */
+.panel { width: 100%; background: var(--panel); border-radius: 12px; padding: 14px 16px; display: flex; flex-direction: column; gap: 12px; }
+.row { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; }
+.row label { font-size: 14px; }
+.row input {
+  width: 6em; padding: 6px 8px; font: 700 16px var(--font-body);
+  background: #0d0a14; color: var(--ink); border: 1px solid #4a3d5c; border-radius: 6px;
+}
+.row .count { margin-left: auto; font-size: 13px; color: var(--muted); font-variant-numeric: tabular-nums; }
+.ghost {
+  padding: 6px 12px; font: 700 13px var(--font-body); color: var(--ink);
+  background: transparent; border: 1px solid #4a3d5c; border-radius: 6px; cursor: pointer;
+}
+.ghost:hover { border-color: var(--gold); color: var(--gold); }
+.ghost:focus-visible, .row input:focus-visible { outline: 2px solid var(--gold); outline-offset: 2px; }
+.hist-title { font-size: 12px; letter-spacing: .2em; color: var(--muted); }
+.history { display: flex; flex-wrap: wrap; gap: 6px; min-height: 30px; }
+.history span {
+  font-family: var(--font-led); font-size: 18px; min-width: 2.4em; text-align: center;
+  padding: 2px 6px; border-radius: 4px; background: #0d0a14; color: var(--led);
+  font-variant-numeric: tabular-nums;
+}
+.history span:first-child { background: var(--led); color: #1a0c00; }
+.history .empty { font-size: 13px; color: var(--muted); }
+
+@media (prefers-reduced-motion: reduce) {
+  .bulbs i, .number.hit { animation: none; }
+}
+</style>
+
+<div class="wrap">
+  <header class="marquee">
+    <div class="bulbs top" aria-hidden="true"></div>
+    <h1>抽選</h1>
+    <p>ボタンを押して整理番号を引いてください</p>
+    <div class="bulbs bottom" aria-hidden="true"></div>
+  </header>
+
+  <section class="board" aria-live="polite">
+    <div class="label">あなたの入場番号</div>
+    <div class="number idle" id="num">000</div>
+    <div class="sub" id="sub">&nbsp;</div>
+  </section>
+
+  <div class="btn-zone">
+    <button class="big-red" id="go" type="button">抽選</button>
+  </div>
+
+  <section class="panel">
+    <div class="row">
+      <label for="max">番号は 1 〜</label>
+      <input id="max" type="number" min="1" max="999" value="100">
+      <span class="count" id="count">残り 100 / 100</span>
+    </div>
+    <div class="row">
+      <button class="ghost" id="reset" type="button">リセット</button>
+      <button class="ghost" id="sound" type="button">効果音 ON</button>
+    </div>
+    <div class="hist-title">これまでの番号(新しい順)</div>
+    <div class="history" id="history"></div>
+  </section>
+</div>
+
+<script>
+(() => {
+  const $ = id => document.getElementById(id);
+  const numEl = $("num"), subEl = $("sub"), btn = $("go"), maxEl = $("max"),
+        countEl = $("count"), histEl = $("history"), soundBtn = $("sound");
+
+  // bulbs
+  document.querySelectorAll(".bulbs").forEach(b => {
+    for (let i = 0; i < 14; i++) b.appendChild(document.createElement("i"));
+  });
+
+  let max = 100, pool = [], drawn = [], soundOn = true, ctx = null, spinning = false;
+
+  const pad = n => String(n).padStart(String(max).length < 3 ? 3 : String(max).length, "0");
+
+  function resetPool() {
+    max = Math.min(999, Math.max(1, parseInt(maxEl.value, 10) || 1));
+    maxEl.value = max;
+    pool = Array.from({ length: max }, (_, i) => i + 1);
+    drawn = [];
+    numEl.textContent = pad(0).replace(/\d/g, "0");
+    numEl.className = "number idle";
+    subEl.innerHTML = "&nbsp;";
+    btn.disabled = false;
+    render();
+  }
+
+  function render() {
+    countEl.textContent = `残り ${pool.length} / ${max}`;
+    histEl.innerHTML = drawn.length
+      ? drawn.slice().reverse().map(n => `<span>${n}</span>`).join("")
+      : `<span class="empty">まだ抽選していません</span>`;
+  }
+
+  function beep(freq, dur, type = "square", vol = .05) {
+    if (!soundOn) return;
+    try {
+      ctx = ctx || new (window.AudioContext || window.webkitAudioContext)();
+      const o = ctx.createOscillator(), g = ctx.createGain();
+      o.type = type; o.frequency.value = freq;
+      g.gain.setValueAtTime(vol, ctx.currentTime);
+      g.gain.exponentialRampToValueAtTime(.0001, ctx.currentTime + dur);
+      o.connect(g).connect(ctx.destination);
+      o.start(); o.stop(ctx.currentTime + dur);
+    } catch (e) {}
+  }
+
+  function fanfare() {
+    [523, 659, 784, 1047].forEach((f, i) => setTimeout(() => beep(f, .25, "triangle", .08), i * 110));
+  }
+
+  function draw() {
+    if (spinning || !pool.length) return;
+    spinning = true;
+    btn.disabled = true;
+    numEl.className = "number";
+    subEl.textContent = "抽選中…";
+
+    const idx = Math.floor(Math.random() * pool.length);
+    const result = pool.splice(idx, 1)[0];
+
+    const reduce = matchMedia("(prefers-reduced-motion: reduce)").matches;
+    const total = reduce ? 1 : 32;
+    let step = 0;
+    const tick = () => {
+      step++;
+      if (step < total) {
+        numEl.textContent = pad(1 + Math.floor(Math.random() * max));
+        beep(880 + (step % 2) * 220, .04);
+        setTimeout(tick, 40 + step * step * .35); // だんだん減速
+      } else {
+        numEl.textContent = pad(result);
+        numEl.className = "number hit";
+        subEl.textContent = `${result} 番が出ました!`;
+        drawn.push(result);
+        fanfare();
+        render();
+        spinning = false;
+        btn.disabled = pool.length === 0;
+        if (!pool.length) subEl.textContent = `${result} 番 ── 全番号を引き終わりました`;
+      }
+    };
+    tick();
+  }
+
+  btn.addEventListener("click", draw);
+  document.addEventListener("keydown", e => {
+    if ((e.code === "Space" || e.code === "Enter") && document.activeElement === document.body) {
+      e.preventDefault(); btn.classList.add("pressed"); setTimeout(() => btn.classList.remove("pressed"), 120); draw();
+    }
+  });
+  $("reset").addEventListener("click", resetPool);
+  maxEl.addEventListener("change", resetPool);
+  soundBtn.addEventListener("click", () => {
+    soundOn = !soundOn;
+    soundBtn.textContent = soundOn ? "効果音 ON" : "効果音 OFF";
+  });
+
+  resetPool();
+})();
+</script>
+
+</body></html>
